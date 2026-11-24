@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "test": "node test/smoke.js"
+    "test": "node test/smoke.js",
+    "seed": "node scripts/seed.js",
+    "test:ci": "node scripts/seed.js && node test/isolation.js"
   },
   "engines": {
     "node": ">=16"
