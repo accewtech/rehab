@@ -1,102 +1,72 @@
-# Infra — Estimativas e plano PR‑1
+# Infra — Estimativas e opções (PR1)
 
-Resumo executivo
-- Objetivo: propor opções de infraestrutura e estimativas mensais compatíveis com o teto TOTAL de US0/mês (US disponíveis para novas ações). Priorizar free tiers e alternativas de baixo custo. Preparar um plano PR‑ready (PR1) com scaffolding, collections e seeds para revisão humana.
-- Banco de dados: MongoDB Atlas (você já possui conta). Recomendo uso de Atlas M0 (Free) para desenvolvimento e demos.
+Resumo rápido
+- Orçamento declarado disponível: US$8/mês (restante do teto US$10). Priorizar free tiers e opções com custo previsível.
 
-1) Tabela de opções e estimativas rápidas
-- Frontend / Hosting Next.js
-  - Vercel (Hobby / Free): US/bin/bash/mo (recomendado para App Router). Integra CI/CD e previews.
-  - Netlify (Free): US/bin/bash/mo. Alternativa viável.
-  - Render (Free tier): US/bin/bash/mo.
+Tabela resumida de componentes e estimativas (prioridade: grátis → baixo custo)
 
-- Banco de dados
-  - MongoDB Atlas M0 (Free): US/bin/bash/mo — recomendado para dev/demo. Conecta com string padrão.
-  - MongoDB Atlas M2/M5 (paid): ~US–25/mo (varia por região) — provavelmente excede o teto; requer aprovação explícita.
+- Frontend (Next.js host)
+  - Vercel (Free) — deploys e previews grátis para projetos pequenos. Custo: US$0 (free tier) até necessidade de plano Pro.
+  - Netlify / Render (Free tiers) — alternativa; US$0 para demos.
 
-- Filas / Jobs (BullMQ/Redis)
-  - Upstash (Free plan): US/bin/bash/mo até limites baixos — boa alternativa para filas pequenas.
-  - Redis Cloud (paid): >US/mo — avaliar só se necessário.
-  - Recomendação: evitar Redis pago inicialmente; usar jobs serverless ou Upstash free.
+- Banco de Dados (MongoDB)
+  - Atlas M0 (Free) — recomendado para desenvolvimento/demo. Custo: US$0/mês.
+  - Atlas M2/M5 (Paid) — M2 ≈ US$9–15/mo (varia por região) — provavelmente acima do teto; só aprovar se necessário.
 
-- Storage (arquivos)
-  - Cloudinary (Free tier) ou Vercel storage para attachments pequenos: US/bin/bash/mo para uso limitado.
-  - S3: custo mínimo (pay-as-you-go) — geralmente barato, mas variável.
+- Jobs / Filas
+  - Upstash (Redis, Free tier) — uso limitado gratuito; adequado para filas leves.
+  - Redis Cloud (paid) — custos variam (a partir de US$5–10+). Evitar inicialmente.
+
+- Storage (attachments)
+  - Cloudinary (Free) — bom para imagens e transformações; limite gratuito.
+  - S3 (pay-as-you-go) — custo baixo para uso moderado; estimativa variável.
 
 - Email / Notificações
-  - Mailtrap (dev sandbox) / Ethereal / SendGrid free tier: US/bin/bash/mo para testes.
+  - Mailtrap / Ethereal / SendGrid (Free tiers) — testes/dev sem custo.
 
-- Observability / Erros
-  - Sentry Free: US/bin/bash/mo com limites para erro/debug.
+- Observability
+  - Sentry (Free tier) — OK para demo.
 
-- Resultados esperados (mínimo viável dentro do teto)
-  - Usando somente free tiers: custo = US/bin/bash/mo (Vercel free + Atlas M0 + Upstash free + Cloudinary free + Mailtrap) — recomendado para demos e validação.
-  - Se um componente pago for inevitável, apresentar custo detalhado e solicitar aprovação antes de provisionar.
+Estimativa de custo mínimo (demo)
+- Vercel (Free): US$0
+- MongoDB Atlas M0: US$0
+- Upstash free: US$0
+- Cloudinary free (opcional): US$0
+- Mailtrap/SendGrid free: US$0
+Total estimado (demo): US$0/mês — dentro do teto.
 
-2) Arquitetura mínima recomendada
-- Frontend: Next.js (App Router) hospedado no Vercel (free) com páginas públicas e área autenticada.
-- Backend / CMS: PayloadCMS integrado via Next.js API routes (ou rodando como serviço separado, se preferir).
-- DB: MongoDB Atlas M0 (single database) com  scoping em todas as collections.
-- Storage: Cloudinary para imagens e pequenos attachments; fallback para S3 se necessário.
-- Jobs: jobs leves via serverless (API route / cron) e Upstash se for preciso enfileirar.
-- Autenticação: JWTs com claims  e ; middleware server-side para checagem de tenant e field-level rules.
+Cenário pago mínimo (se Atlas M2 necessário): aproximado
+- Atlas M2: ~US$12/mo (estimativa) — ultrapassa o restante US$8.
+- Planejamento: qualquer cluster pago requer aprovação explícita.
 
-3) Política de multitenancy (inicial)
-- Implementar scoping por  nas collections, índices por  + .
-- Aplicar validação no servidor para todas as operações CRUD, rejeitando queries que não contenham  correto.
-- Arquitetura futura: migrar para database por tenant caso às exigências de compliance/isolamento justifiquem o custo.
+Recomendações arquiteturais mínimas
+- Frontend: Next.js App Router hospedado em Vercel (free). Build integrado via GitHub Actions ou Vercel.
+- CMS/API: PayloadCMS v3 integrado com Next API routes (ou serviço separado), armazenando dados em MongoDB Atlas.
+- Multitenancy: todas as collections indexadas por `tenantId`; validação server-side; field-level RBAC implementado no servidor.
+- Auth: JWT com claims `tenantId` + roles; middleware server-side para validação e field-level enforcement.
+- Jobs: evitar Redis pago inicialmente; usar Upstash free ou cron/serverless jobs para tarefas agendadas.
+- Storage: Cloudinary para imagens; fallback para S3 se necessário.
 
-4) PR1 — Scaffolding PR (conteúdo PR‑ready)
-Objetivo do PR1: entregar fundação executável mínima e revisável que permita testes de isolamento e dados fictícios.
+Plano PR‑ready para PR2 (complemento de fundação)
+- Objetivo: implementar models/collections básicos, seed e testes de isolamento via Payload/Next.
+- Conteúdo do PR2:
+  - Payload schemas (tenants, users, roles, professionals, patients, appointments, encounters, billing_entries, consents, audit_logs, attachments).
+  - Conector MongoDB via `MONGODB_URI` (read from env), instruções para usar Atlas M0 localmente.
+  - Seeds: scripts para criar Tenant A e B + users/patients.
+  - Tests: integração que valida que Tenant A não vê Tenant B.
+  - CI: job que roda `npm run test:ci` (seed + isolation).
+  - Documentação: `docs/pr-checklist.md` com checklist de revisão humana e evidências de orçamento configurado.
 
-- Arquivos/artefatos a criar (sugestão):
-  -  (scripts: dev, build, start, seed, test)
-  -  / 
-  -  (configurações básicas das collections)
-  -  (arquivos TS/JS por collection listada em )
-  - ,  ou  (base Next.js)
-  -  (endpoint Payload se integrado)
-  -  (conexão com MongoDB, leitura de  da env)
-  -  (seed de dados fictícios por tenant)
-  -  (testes automatizados que verificam que um tenant não vê dados de outro)
-  -  (variáveis necessárias: ,  etc.)
-  -  (instruções de setup local e como rodar seeds/tests)
-  -  atualizados (este e o anterior)
-  -  (CI básico que roda  e )
+Estimativa de esforço (PR2)
+- Scaffolding + schemas + seed + testes básicos: 3–5 dias (1 dev)
+- Revisão e ajustes: 1–2 dias
 
-- Collections a implementar inicialmente (Payload schema minimal): tenants, users, roles, professionals, patients, services, appointments, encounters, billing_entries, consents, audit_logs, attachments.
+Checklist before any paid provisioning
+- Evidência do orçamento/provider (screenshot/link)
+- Aprovação explícita para provisionar cluster pago
+- Secrets stored in GitHub/Vercel secrets (owner provides or stores them)
 
-- Seeds e dados de teste
-  - Criar 2 tenants (Tenant A, Tenant B), 2 usuários por tenant (admin + professional), 3 pacientes por tenant, 5 appointments confidentes para cada tenant.
-  - Test scripts que interroguem DB via API e confirmem que Tenant A não retorna dados de Tenant B.
+Próxima ação proposta
+- Criar branch `aurafoundation/infra-estimates` com este documento e abrir PR‑draft para revisão.
+- Alternativa: gerar os artefatos localmente e aguardar seu OK antes de abrir PR.
 
-- Testes automatizados (mínimos para PR1)
-  - Unit tests para helpers de autorização.
-  - Integration test:  que seed/requests API endpoints to confirm scoping.
-
-- Critérios de aceitação do PR1 (revise antes de merge)
-  - Linter e testes passam no CI.
-  - Seed cria dados fictícios e os endpoints expõem dados apenas por tenant.
-  - Documentação de setup e checklist de evidências (inclui prova de orçamento configurado).
-  - PR marcado como draft e com revisão humana obrigatória.
-
-5) Estimativas de esforço (PR1)
-- Scaffolding + collections + seed + testes básicos: 3–6 dias de desenvolvimento (1 desenvolvedor).
-- Revisão e ajustes após feedback: 1–2 dias.
-
-6) Checklist de aprovação humana (antes de merge/produção)
-- Evidência do orçamento/configuração (captura de tela ou link válido) — necessário para qualquer provisionamento pago.
-- Revisão de segurança e isolamento por um revisor técnico.
-- Testes de isolamento aprovados e logs de CI verdes.
-- Documentação de uso e rollback.
-
-7) Integração MongoDB Atlas
-- Para desenvolvimento: pedir  com usuário de leitura/escrita limitado (evitar usar admin root token em pipelines).
-- Processo seguro: o proprietário da conta insere a string no painel de Secrets (GitHub/ Vercel) ou fornece via canal seguro quando solicitado; eu documentarei as variáveis esperadas em .
-
-8) Seguinte passo prático (minha execução)
-- Gerar  (feito) e aguardar sua confirmação para:  
-  - A) começar a criar o scaffolding no repositório e abrir PR‑draft (posso criar os arquivos e abrir PR agora), ou  
-  - B) apenas preparar o patch PR‑ready localmente e aguardar sua autorização para abrir o PR. 
-
-Observação: neste checkout não há código-fonte da app. Posso criar o scaffolding no repositório atual como um PR se desejar; isso adicionará os arquivos mencionados acima.
