@@ -1,0 +1,16 @@
+{
+  "name": "aura-rehab",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "test": "node test/smoke.js",
+    "seed": "node scripts/seed.js",
+    "test:ci": "node scripts/seed.js && node test/isolation.js"
+  },
+  "engines": {
+    "node": ">=16"
+  }
+}
