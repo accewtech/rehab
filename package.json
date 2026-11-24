@@ -8,7 +8,9 @@
     "start": "next start",
     "test": "node test/smoke.js",
     "seed": "node scripts/seed.js",
-    "test:ci": "node scripts/seed.js && node test/isolation.js"
+    "test:ci": "node scripts/seed.js && node test/isolation.js",
+    "seed:payload": "node scripts/payload-seed.js",
+    "test:payload": "node test/payload-isolation.js"
   },
   "engines": {
     "node": ">=16"
